@@ -29,5 +29,20 @@ services:
       - ./policies:/app/policies
       - ./logs:/app/logs
 
+  dashboard:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./dashboard:/app/dashboard
+
 volumes:
   redis_data:

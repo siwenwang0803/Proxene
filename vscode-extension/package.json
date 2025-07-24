@@ -1,0 +1,145 @@
+{
+  "name": "proxene",
+  "displayName": "Proxene - AI Governance Proxy",
+  "description": "Developer-first AI governance with cost limits, PII detection, and request debugging",
+  "version": "0.1.0",
+  "publisher": "proxene",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other",
+    "Debuggers",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "ai",
+    "llm",
+    "openai",
+    "governance",
+    "proxy",
+    "cost",
+    "pii",
+    "debugging"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "proxene.startProxy",
+        "title": "Start Proxy",
+        "category": "Proxene",
+        "icon": "$(play)"
+      },
+      {
+        "command": "proxene.stopProxy",
+        "title": "Stop Proxy",
+        "category": "Proxene",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "proxene.showLogs",
+        "title": "Show Request Logs",
+        "category": "Proxene",
+        "icon": "$(output)"
+      },
+      {
+        "command": "proxene.openDashboard",
+        "title": "Open Dashboard",
+        "category": "Proxene",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "proxene.refreshLogs",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "proxeneControl",
+          "name": "Proxene Control",
+          "when": "workspaceHasProxene"
+        },
+        {
+          "id": "proxeneLogs",
+          "name": "Request Logs",
+          "when": "proxeneActive"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "proxene",
+          "title": "Proxene",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "proxene.refreshLogs",
+          "when": "view == proxeneLogs",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "proxene.startProxy",
+          "when": "workspaceHasProxene"
+        },
+        {
+          "command": "proxene.stopProxy",
+          "when": "proxeneActive"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Proxene",
+      "properties": {
+        "proxene.proxyPort": {
+          "type": "number",
+          "default": 8081,
+          "description": "Port for Proxene proxy server"
+        },
+        "proxene.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically start proxy when VS Code opens"
+        },
+        "proxene.logLevel": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"],
+          "default": "info",
+          "description": "Log level for Proxene proxy"
+        },
+        "proxene.dashboardUrl": {
+          "type": "string",
+          "default": "http://localhost:8501",
+          "description": "URL for Proxene dashboard"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/siwenwang0803/Proxene.git"
+  },
+  "license": "MIT"
+}

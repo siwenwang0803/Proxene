@@ -232,5 +232,43 @@ def test(coverage: bool):
         sys.exit(1)
 
 
+@cli.command()
+@click.option('--port', '-p', default=8501, help='Port for dashboard (default: 8501)')
+@click.option('--host', '-h', default='0.0.0.0', help='Host for dashboard (default: 0.0.0.0)')
+def dashboard(port: int, host: str):
+    """Launch the Proxene dashboard"""
+    
+    import subprocess
+    import sys
+    import os
+    
+    # Find dashboard app
+    dashboard_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dashboard')
+    dashboard_app = os.path.join(dashboard_dir, 'app.py')
+    
+    if not os.path.exists(dashboard_app):
+        click.echo(click.style("❌ Dashboard not found!", fg="red"))
+        click.echo("Make sure you're in the Proxene project directory")
+        sys.exit(1)
+    
+    click.echo("🚀 Starting Proxene Dashboard...")
+    click.echo(f"📊 Dashboard: http://localhost:{port}")
+    click.echo("🛑 Press Ctrl+C to stop")
+    
+    try:
+        subprocess.run([
+            sys.executable, '-m', 'streamlit', 'run',
+            dashboard_app,
+            '--server.port', str(port),
+            '--server.address', host,
+            '--theme.base', 'dark'
+        ], cwd=dashboard_dir)
+    except KeyboardInterrupt:
+        click.echo(click.style("\n👋 Dashboard stopped", fg="green"))
+    except Exception as e:
+        click.echo(click.style(f"❌ Failed to start dashboard: {e}", fg="red"))
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     cli()
