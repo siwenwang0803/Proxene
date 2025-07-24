@@ -45,10 +45,27 @@ class OTELMiddleware:
                 BatchSpanProcessor(console_exporter)
             )
             
-        # TODO: Add OTLP exporter for production
-        # from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-        # otlp_exporter = OTLPSpanExporter(endpoint="localhost:4317", insecure=True)
-        # provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+        # Add OTLP exporter for production
+        import os
+        otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+        if otlp_endpoint:
+            try:
+                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+                
+                otlp_exporter = OTLPSpanExporter(
+                    endpoint=otlp_endpoint,
+                    insecure=os.getenv("OTEL_EXPORTER_OTLP_INSECURE", "false").lower() == "true",
+                    headers=(
+                        ("Authorization", f"Bearer {os.getenv('OTEL_EXPORTER_OTLP_HEADERS_AUTHORIZATION')}")
+                        if os.getenv('OTEL_EXPORTER_OTLP_HEADERS_AUTHORIZATION')
+                        else None
+                    )
+                )
+                provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+                logger.info(f"OTLP exporter configured for {otlp_endpoint}")
+                
+            except ImportError:
+                logger.warning("OTLP exporter requested but not installed. Install with: pip install opentelemetry-exporter-otlp")
         
         # Set as global tracer provider
         trace.set_tracer_provider(provider)

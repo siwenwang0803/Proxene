@@ -13,6 +13,7 @@ from proxene.guards.cost_guard import CostGuard
 from proxene.guards.pii_detector import PIIDetector, PIIAction
 from proxene.policies.loader import PolicyLoader
 from proxene.middleware.otel import otel_middleware
+from proxene.middleware.rate_limiter import rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +58,22 @@ class ProxyService:
         self, 
         request_data: Dict[str, Any],
         headers: Dict[str, str],
-        policy: Dict[str, Any]
+        policy: Dict[str, Any],
+        client_info: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """Process chat completion request with governance"""
         
         pii_findings_request = []
         pii_findings_response = []
+        
+        # 0. Rate limiting
+        if client_info and policy.get("rate_limits"):
+            await rate_limiter.connect()
+            allowed, reason, remaining = await rate_limiter.check_rate_limit(
+                client_info, policy["rate_limits"]
+            )
+            if not allowed:
+                raise HTTPException(status_code=429, detail=reason)
         
         # 1. PII detection on request
         if policy.get("pii_detection", {}).get("enabled", False):
@@ -260,11 +271,18 @@ async def chat_completions(request: Request):
         # Get active policy
         policy = proxy_service.policy_loader.get_active_policy()
         
+        # Extract client info for rate limiting
+        client_info = {
+            'client_ip': request.client.host if request.client else 'unknown',
+            'user_agent': request.headers.get('user-agent', 'unknown')
+        }
+        
         # Process with governance
         response = await proxy_service.process_chat_completion(
             request_data,
             dict(request.headers),
-            policy
+            policy,
+            client_info
         )
         
         return JSONResponse(content=response)
