@@ -217,7 +217,7 @@ def test(coverage: bool):
     import subprocess
     import sys
     
-    cmd = ["python", "-m", "pytest"]
+    cmd = ["python", "-m", "pytest", "tests/"]
     
     if coverage:
         cmd.extend(["--cov=proxene", "--cov-report=term-missing"])
