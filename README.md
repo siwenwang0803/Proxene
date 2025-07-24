@@ -1,6 +1,6 @@
 # Proxene – Developer-First AI Governance Proxy
 
-**只需把 LLM 请求指向 Proxene，即刻省成本、去敏、合规审计，全部用 YAML/VS-Code 调试。**
+**Just point your LLM requests to Proxene for instant cost savings, PII protection, and compliance auditing—all debuggable with YAML/VS Code.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
