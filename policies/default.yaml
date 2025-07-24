@@ -1,0 +1,32 @@
+name: Default Policy
+description: Default governance policy for Proxene
+enabled: true
+cost_limits:
+  max_per_request: 0.03
+  max_per_minute: 1.0
+  daily_cap: 100.0
+rate_limits:
+  requests_per_minute: 60
+  requests_per_hour: 1000
+  requests_per_day: 10000
+model_routing:
+- condition: request.max_tokens < 100
+  model: gpt-3.5-turbo
+- condition: default
+  model: gpt-4o-mini
+pii_detection:
+  enabled: false
+  action: redact
+  entities:
+  - email
+  - phone
+  - ssn
+  - credit_card
+caching:
+  enabled: true
+  ttl_seconds: 3600
+  max_cache_size_mb: 100
+logging:
+  log_requests: true
+  log_responses: false
+  log_costs: true

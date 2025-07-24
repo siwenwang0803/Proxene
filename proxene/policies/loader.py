@@ -77,9 +77,9 @@ class PolicyLoader:
             ],
             
             "pii_detection": {
-                "enabled": False,
-                "action": "redact",
-                "entities": ["email", "phone", "ssn", "credit_card"]
+                "enabled": True,
+                "action": "warn",
+                "entities": ["email", "phone", "ssn", "credit_card", "api_key"]
             },
             
             "caching": {

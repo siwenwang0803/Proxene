@@ -97,8 +97,39 @@ async def test_features():
         else:
             print(f"   ❌ Cache test failed")
     
-    # 4. Cost limit test
-    print("\n4️⃣  Cost Limit Test")
+    # 4. PII Detection Test
+    print("\n4️⃣  PII Detection Test")
+    pii_request = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "user", "content": "My email is john.doe@example.com and my phone is 555-123-4567"}
+        ],
+        "max_tokens": 50
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{base_url}/v1/chat/completions",
+            headers=headers,
+            json=pii_request
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            if "_proxene_pii" in result:
+                pii_data = result["_proxene_pii"]
+                req_findings = len(pii_data.get("request_findings", []))
+                resp_findings = len(pii_data.get("response_findings", []))
+                print(f"   ✅ PII detected: {req_findings} in request, {resp_findings} in response")
+            else:
+                print("   ⚠️  No PII metadata (detection might be disabled)")
+        elif response.status_code == 400 and "PII detected" in str(response.json()):
+            print(f"   ✅ PII blocking working: {response.json()['detail']}")
+        else:
+            print(f"   ❌ Unexpected response: {response.status_code}")
+
+    # 5. Cost limit test
+    print("\n5️⃣  Cost Limit Test") 
     expensive_request = {
         "model": "gpt-4",
         "messages": [
@@ -121,8 +152,8 @@ async def test_features():
         else:
             print(f"   ❌ Unexpected response: {response.status_code}")
     
-    # 5. Stats endpoint
-    print("\n5️⃣  Stats Endpoint")
+    # 6. Stats endpoint
+    print("\n6️⃣  Stats Endpoint")
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{base_url}/stats")
         if response.status_code == 200:

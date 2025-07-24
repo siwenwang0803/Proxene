@@ -10,7 +10,9 @@ import redis.asyncio as redis
 
 from proxene.core.cache import CacheService
 from proxene.guards.cost_guard import CostGuard
+from proxene.guards.pii_detector import PIIDetector, PIIAction
 from proxene.policies.loader import PolicyLoader
+from proxene.middleware.otel import otel_middleware
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class ProxyService:
         self.cache_service = CacheService()
         self.redis_client: Optional[redis.Redis] = None
         self.cost_guard: Optional[CostGuard] = None
+        self.pii_detector = PIIDetector()
         self.policy_loader = PolicyLoader()
         
     async def initialize(self):
@@ -58,7 +61,25 @@ class ProxyService:
     ) -> Dict[str, Any]:
         """Process chat completion request with governance"""
         
-        # 1. Check cost limits
+        pii_findings_request = []
+        pii_findings_response = []
+        
+        # 1. PII detection on request
+        if policy.get("pii_detection", {}).get("enabled", False):
+            pii_config = policy["pii_detection"]
+            action_str = pii_config.get("action", "warn")
+            action = PIIAction[action_str.upper()]
+            entities = pii_config.get("entities", [])
+            
+            try:
+                request_data, pii_findings_request = self.pii_detector.process_request(
+                    request_data, action, entities
+                )
+            except ValueError as e:
+                # PII blocking
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        # 2. Check cost limits
         if self.cost_guard and policy.get("cost_limits"):
             allowed, reason = await self.cost_guard.check_cost_limits(
                 request_data, 
@@ -67,7 +88,7 @@ class ProxyService:
             if not allowed:
                 raise HTTPException(status_code=429, detail=reason)
                 
-        # 2. Check cache
+        # 3. Check cache
         if policy.get("caching", {}).get("enabled", True):
             cached_response = await self.cache_service.get(request_data)
             if cached_response:
@@ -75,10 +96,28 @@ class ProxyService:
                 cached_response["_proxene_cache_hit"] = True
                 return cached_response
                 
-        # 3. Forward request
-        response = await self._forward_llm_request(request_data, headers)
+        # 4. Forward request with OTEL tracing
+        model = request_data.get("model", "gpt-3.5-turbo")
         
-        # 4. Track costs
+        try:
+            response = await self._forward_llm_request(request_data, headers)
+        except Exception as e:
+            # Trace error
+            otel_middleware.trace_llm_request(model, request_data, error=e)
+            raise
+        
+        # 5. PII detection on response
+        if policy.get("pii_detection", {}).get("enabled", False):
+            pii_config = policy["pii_detection"]
+            action_str = pii_config.get("action", "warn")
+            action = PIIAction[action_str.upper()]
+            entities = pii_config.get("entities", [])
+            
+            response, pii_findings_response = self.pii_detector.process_response(
+                response, action, entities
+            )
+        
+        # 6. Track costs
         if self.cost_guard and response.get("usage"):
             model = request_data.get("model", "gpt-3.5-turbo")
             usage = response["usage"]
@@ -94,10 +133,20 @@ class ProxyService:
             # Add cost to response metadata
             response["_proxene_cost"] = cost
             
-        # 5. Cache response
+        # 7. Add PII findings to metadata
+        if pii_findings_request or pii_findings_response:
+            response["_proxene_pii"] = {
+                "request_findings": pii_findings_request,
+                "response_findings": pii_findings_response
+            }
+            
+        # 8. Cache response
         if policy.get("caching", {}).get("enabled", True):
             ttl = policy.get("caching", {}).get("ttl_seconds", 3600)
             await self.cache_service.set(request_data, response, ttl)
+            
+        # 9. OTEL tracing
+        otel_middleware.trace_llm_request(model, request_data, response)
             
         return response
         
@@ -173,6 +222,11 @@ proxy_service = ProxyService()
 @app.on_event("startup")
 async def startup():
     await proxy_service.initialize()
+    
+    # Initialize OTEL
+    otel_middleware.initialize()
+    otel_middleware.instrument_fastapi(app)
+    
     logger.info("Proxene proxy started")
 
 

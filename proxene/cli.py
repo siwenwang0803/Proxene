@@ -209,5 +209,28 @@ def validate_policies():
         click.echo(f"Active policy: {active.get('name', 'Unknown')}")
 
 
+@cli.command()
+@click.option('--coverage', is_flag=True, help='Run with coverage report')
+def test(coverage: bool):
+    """Run test suite"""
+    
+    import subprocess
+    import sys
+    
+    cmd = ["python", "-m", "pytest"]
+    
+    if coverage:
+        cmd.extend(["--cov=proxene", "--cov-report=term-missing"])
+    
+    click.echo("Running Proxene test suite...")
+    result = subprocess.run(cmd, cwd=".")
+    
+    if result.returncode == 0:
+        click.echo(click.style("\n✅ All tests passed!", fg="green"))
+    else:
+        click.echo(click.style("\n❌ Some tests failed", fg="red"))
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     cli()
