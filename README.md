@@ -12,11 +12,11 @@
 pip install proxene
 
 # Start proxy
-proxene start --port 8080
+proxene start --port 8081
 
 # Point your LLM calls to Proxene
 # Old: https://api.openai.com/v1/chat/completions
-# New: http://localhost:8080/v1/chat/completions
+# New: http://localhost:8081/v1/chat/completions
 ```
 
 ## ✨ Features

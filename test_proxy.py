@@ -13,7 +13,7 @@ def test_proxy():
         return
     
     # Test request
-    url = "http://localhost:8080/v1/chat/completions"
+    url = "http://localhost:8081/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -36,7 +36,7 @@ def test_proxy():
             print(f"Error: {response.text}")
     except Exception as e:
         print(f"Failed to connect: {e}")
-        print("Make sure the proxy is running on http://localhost:8080")
+        print("Make sure the proxy is running on http://localhost:8081")
 
 if __name__ == "__main__":
     test_proxy()

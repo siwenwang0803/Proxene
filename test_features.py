@@ -14,7 +14,7 @@ async def test_features():
         print("❌ Please set OPENAI_API_KEY environment variable")
         return
     
-    base_url = "http://localhost:8080"
+    base_url = "http://localhost:8081"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
