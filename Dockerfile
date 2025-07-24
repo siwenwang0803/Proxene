@@ -8,12 +8,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy poetry files
-COPY pyproject.toml poetry.lock* ./
+COPY pyproject.toml ./
+COPY poetry.lock* ./
 
 # Install poetry and dependencies
-RUN pip install poetry && \
+RUN pip install --no-cache-dir poetry==1.7.1 && \
     poetry config virtualenvs.create false && \
-    poetry install --no-dev --no-interaction --no-ansi
+    poetry install --only main --no-interaction --no-ansi
 
 # Copy application code
 COPY proxene ./proxene
