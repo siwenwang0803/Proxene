@@ -5,16 +5,14 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy poetry files
-COPY pyproject.toml ./
-COPY poetry.lock* ./
+# Copy requirements
+COPY requirements.txt ./
 
-# Install poetry and dependencies
-RUN pip install --no-cache-dir poetry==1.7.1 && \
-    poetry config virtualenvs.create false && \
-    poetry install --only main --no-interaction --no-ansi
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY proxene ./proxene
